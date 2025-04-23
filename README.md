@@ -70,4 +70,4 @@
 
 - **Lineage Reconstruction & Simulation**:
   - [Dynverse framework](https://github.com/dynverse)
-    - Key paper: [Nature Comms](https://www.nature.com/articles/s41467-021-24152-2)
+    - Key paper: [Spearheading future omics analyses using dyngen, a multi-modal simulator of single cells](https://www.nature.com/articles/s41467-021-24152-2)
