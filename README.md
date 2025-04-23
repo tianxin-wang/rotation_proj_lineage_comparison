@@ -11,10 +11,10 @@
 ## Dataset Description
 
 - **Chicken Dataset** (`Ggal_Kaess_devGABA_annotated`):   
-  [Source](https://www.science.org/doi/10.1126/science.adp5182)
+  https://www.science.org/doi/10.1126/science.adp5182
 
 - **Salamander Dataset** combinines:
-  - Data from [Science (2022)](https://www.science.org/doi/10.1126/science.abp9186)
+  - Data from https://www.science.org/doi/10.1126/science.abp9186
   - Unpublished developmental data from the Tosches lab
 ---
 
