@@ -10,15 +10,12 @@
 
 ## Dataset Description
 
-- **Chicken Dataset** (`Ggal_Kaess_devGABA_annotated`):  
-  Contains **X cells** and **G genes**.  
+- **Chicken Dataset** (`Ggal_Kaess_devGABA_annotated`):   
   [Source](https://www.science.org/doi/10.1126/science.adp5182)
 
-- **Salamander Dataset**:  
-  Contains **X cells** and **G genes**, combining:
+- **Salamander Dataset** combinines:
   - Data from [Science (2022)](https://www.science.org/doi/10.1126/science.abp9186)
-  - Unpublished developmental data from the lab
-
+  - Unpublished developmental data from the Tosches lab
 ---
 
 ## Guiding Questions
