@@ -56,7 +56,7 @@
 
 ### Machine Learning & Computational Biology
 - [Revealing lineage-related signals in single-cell gene expression using random matrix theory](https://www.pnas.org/doi/10.1073/pnas.1913931118)
-- [*CONCORD*](https://qinzhu.github.io/Concord_documentation/)
+- [*CONCORD*](https://qinzhu.github.io/Concord_documentation/): COntrastive learNing for Cross-dOmain Reconciliation and Discovery
 - [Hierarchical Control of State Transitions in Dense Associative Memories](https://arxiv.org/html/2412.11336v1)
 - [*SATURN*](https://www.nature.com/articles/s41592-024-02191-z#data-availability): Cross-species single-cell alignment
 - [*Genes2Genes*](https://www.nature.com/articles/s41592-024-02378-4): Gene-level alignment of single-cell trajectories
