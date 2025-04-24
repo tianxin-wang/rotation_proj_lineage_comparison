@@ -11,10 +11,10 @@
 ## Dataset Description
 
 - **Chicken Dataset** (`Ggal_Kaess_devGABA_annotated`):   
-  https://www.science.org/doi/10.1126/science.adp5182
+  [Developmental origins and evolution of pallial cell types and structures in birds](https://www.science.org/doi/10.1126/science.adp5182)
 
 - **Salamander Dataset** combinines:
-  - Data from https://www.science.org/doi/10.1126/science.abp9186
+  - Data from [Cell-type profiling in salamanders identifies innovations in vertebrate forebrain evolution](https://www.science.org/doi/10.1126/science.abp9186)
   - Unpublished developmental data from the Tosches lab
 ---
 
@@ -55,11 +55,11 @@
   - https://www.sciencedirect.com/science/article/pii/S0959438818302708
 
 ### Machine Learning & Computational Biology
-- Revealing lineage signals Using Random Matrix Theory
-- *CONCORD*: Coherent cell state landscapes
-- Hierarchical control in dense associative memories
-- *SATURN*: Cross-species single-cell alignment
-- *Gene2Gene*: Gene-level alignment of single-cell trajectories
+- [Revealing lineage-related signals in single-cell gene expression using random matrix theory](https://www.pnas.org/doi/10.1073/pnas.1913931118)
+- [*CONCORD*](https://qinzhu.github.io/Concord_documentation/)
+- [Hierarchical Control of State Transitions in Dense Associative Memories](https://arxiv.org/html/2412.11336v1)
+- [*SATURN*](https://www.nature.com/articles/s41592-024-02191-z#data-availability): Cross-species single-cell alignment
+- [*Genes2Genes*](https://www.nature.com/articles/s41592-024-02378-4): Gene-level alignment of single-cell trajectories
 
 ---
 
