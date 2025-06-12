@@ -5,47 +5,56 @@ import warnings
 warnings.filterwarnings("ignore")
 
 DATASETS = {'chicken':{'annotation': "newannotation_high", 'cluster': "seurat_clusters",
-                       'scientific_name': 'Ggal', 'root_cell_type': 'PROG', 'start_time': 6}, 
+                       'scientific_name': 'Ggal', 'root_cell_type': 'PROG', 'start_time': 6.0}, 
             'salamander':{'annotation': "newannotation_final_hires", 'cluster': "seurat_clusters",
-                          'scientific_name': 'Pwal', 'root_cell_type': 'LGE', 'start_time': '30'}}
+                          'scientific_name': 'Pwal', 'root_cell_type': 'LGE', 'start_time': 30.0}}
 GENES = ['ZIC2','ZIC1','OTX2','PENK','NR2F2','MAF','TSHZ1','ETV1',
               'ZEB2','ERBB4','PAX6','FOXP2','FOXP1','TAC1','DRD2','DRD1',
               'PPP1R1B','RASD2','BRS3','ZNF503','ISL1','MEIS2','EGR3',
               'GBX2','GBX1','LHX8','LHX6','NKX2-1','DLX5','DLX1','FOXG1']
-PATHS = [('LGE trajectory', ['LGE','prec_LGE','imm_STR','STR_MSN1','STR_MSN1_2',
-                             'STR_MSN1_FOXP2','STR_MSN1_SOX8','STR_MSN2',
-                             'STR_MSN2_PAX6','STR_MSN2_PENK']),
-        ('dLGE trajectory', ['dLGE','prec_dLGE','imm_OB','OB_GC13',
-                             'OB_GC2-10-11-12','OB_GC3-7','OB_GC1-6',
-                             'OB_GC4-9-5-6','OB_GC8','OB_PGC_FOXP2','OB_PGC_TH']),
-        ('MGE+CGE trajectory', ['MGE','CGE','prec_CGE','prec_MGE','prec_MGE/POA',
-                                 'imm_PALL','imm_INs','PALL1','PALL2','IN_CGE',
-                                 'IN_MGE_P_LAMP5','IN_MGE_P_SST-','IN_MGE_P_SST+',
-                                 'IN_MGE_SP_SST-','IN_MGE_SP_SST+']), 
-        ('SEP+POA trajectory', ['eSEP','POA','eSEP-POA','prec_MGE/POA','prec_SEP',
-                                'imm_SEP','imm_PALL/SEP','SEP_LAT_PAX6','SEP_LAT1-3',
-                                'SEP_LAT2','SEP_LAT4','SEP_MED1','SEP1','SEP2'])]
 
 # ========== 1. Specify dataset and Configure paths ==========
-dataset = 'salamander'
+dataset = 'chicken'  # Choose between 'salamander' and 'chicken'
 data_dir = "./Data"
 output_dir = f"./{dataset}_output"
 os.makedirs(output_dir, exist_ok=True)
 TIME_KEY = 'Stage'
 PROG = DATASETS[dataset]['root_cell_type']
 CLUSTER_KEY = DATASETS[dataset]["cluster"]
+START_TIME = DATASETS[dataset]['start_time']
 FILE_NAME = DATASETS[dataset]['scientific_name']
 ANNOTATION_KEY = DATASETS[dataset]["annotation"]
 
+if dataset == 'salamander':
+    PATHS = {'LGE trajectory': ['LGE','prec_LGE','imm_STR','STR_MSN1','STR_MSN1_2',
+                                'STR_MSN1_FOXP2','STR_MSN1_SOX8','STR_MSN2',
+                                'STR_MSN2_PAX6','STR_MSN2_PENK','STR_NODRD'],
+            'dLGE trajectory': ['dLGE','prec_dLGE','imm_OB','OB_GC13','OB_GC2-10-11-12',
+                                'OB_GC3-7','OB_GC1-6','OB_GC4-9-5-6','OB_GC8',
+                                'OB_PGC_FOXP2','OB_PGC_TH'],
+            'MGE+CGE trajectory': ['MGE','CGE','prec_CGE','prec_MGE','prec_MGE/POA',
+                                'imm_PALL','imm_INs','PALL1','PALL2','IN_CGE',
+                                'IN_MGE_P_LAMP5','IN_MGE_P_SST-','IN_MGE_P_SST+',
+                                'IN_MGE_SP_SST-','IN_MGE_SP_SST+'],
+            'SEP+POA trajectory': ['eSEP','POA','eSEP-POA','prec_MGE/POA','prec_SEP',
+                                'imm_SEP','imm_PALL/SEP','SEP_LAT_PAX6','SEP_LAT1-3',
+                                'SEP_LAT2','SEP_LAT4','SEP_MED1','SEP1','SEP2'],
+            'Other': ['AMY_CEA_LA', 'AMY_MEA']}
+elif dataset == 'chicken':
+    PATHS = {'LGE trajectory': ['PROG','PREC','STR','STR_MSN1','STR_MSN2','FOXP2_INs']}
+
 # ========== 2. Import necessary packages and some setups ==========
+import matplotlib
+matplotlib.use('Agg')
 import numpy as np
 import pandas as pd
 import scanpy as sc
 import matplotlib.pyplot as plt
 
 np.random.seed(42)
-def saveas(filename, dpi=300):
-    plt.savefig(os.path.join(output_dir, filename), dpi=dpi, bbox_inches='tight')
+def saveas(filename, output_dir=output_dir, format='png'):
+    plt.savefig(os.path.join(output_dir, filename), dpi=300, bbox_inches='tight',
+                format=format)
     plt.close()
 
 # %%
@@ -136,32 +145,32 @@ logging.info(f"❗Starting {dataset} trajectory inference script...")
 # logging.info("GeneTrajectory inference complete!")
 
 # %%
-# ========== PAGA ==========
-def run_PAGA(ad, descr = None):
-    ad.X = ad.layers['counts'].copy()
-    sc.pp.normalize_total(ad, target_sum=1e4)
-    sc.pp.log1p(ad)
-    sc.pp.scale(ad)
-    sc.pp.neighbors(ad, n_neighbors=5, n_pcs=30, use_rep='X_pca')
-    sc.tl.diffmap(ad, n_comps=20)
-    sc.pp.neighbors(ad, n_neighbors=10 ,use_rep='X_diffmap')
-    sc.tl.paga(ad, groups=ANNOTATION_KEY)
-    suffix = f"_{descr}" if descr is not None else ""
-    if descr is not None:
-        sc.pl.paga(ad, color=[ANNOTATION_KEY])
-    else:
-        sc.set_figure_params(figsize=(8,6))
-        sc.pl.paga(ad, color=[ANNOTATION_KEY], fontsize=4, fontweight='bold', fontoutline=2,
-                   edge_width_scale=0.2, threshold=0.1, node_size_scale=0.5)        
-        saveas(f"PAGA_annot_nodes{suffix}_UMAP.png")
-    sc.tl.draw_graph(ad, init_pos='paga')
-    sc.pl.draw_graph(ad, color=ANNOTATION_KEY, legend_loc='on data', legend_fontsize = 'xx-small')
-    saveas(f"PAGA_annot_sc{suffix}_FA.png")
-    return ad
+# # ========== PAGA ==========
+# def run_PAGA(ad, descr = None):
+#     ad.X = ad.layers['counts'].copy()
+#     sc.pp.normalize_total(ad, target_sum=1e4)
+#     sc.pp.log1p(ad)
+#     sc.pp.scale(ad)
+#     sc.pp.neighbors(ad, n_neighbors=5, n_pcs=30, use_rep='X_pca')
+#     sc.tl.diffmap(ad, n_comps=30)
+#     sc.pp.neighbors(ad, n_neighbors=10 ,use_rep='X_diffmap')
+#     sc.tl.paga(ad, groups=ANNOTATION_KEY)
+#     suffix = f"_{descr}" if descr is not None else ""
+#     if dataset == 'salamander' and descr is None:
+#         sc.set_figure_params(figsize=(8,6))
+#         sc.pl.paga(ad, color=[ANNOTATION_KEY], fontsize=4, fontweight='bold', fontoutline=2,
+#                    edge_width_scale=0.2, threshold=0.1, node_size_scale=0.5)
+#     else:
+#         sc.pl.paga(ad, color=[ANNOTATION_KEY])
+#     saveas(f"PAGA_annot_nodes{suffix}_UMAP.png")
+#     sc.tl.draw_graph(ad, init_pos='paga')
+#     sc.pl.draw_graph(ad, color=ANNOTATION_KEY, legend_loc='on data', legend_fontsize = 'xx-small')
+#     saveas(f"PAGA_annot_sc{suffix}_FA.png")
+#     return ad
 
-adata = sc.read(os.path.join(data_dir, f"{FILE_NAME}_final.h5ad"))
-adata_hvg = adata[:, adata.var['highly_variable']==True].copy()
-adata_hvg = run_PAGA(adata_hvg)
+# adata = sc.read(os.path.join(data_dir, f"{FILE_NAME}_final.h5ad"))
+# adata_hvg = adata[:, adata.var['highly_variable']==True].copy()
+# adata_hvg = run_PAGA(adata_hvg)
 # sc.pl.umap(adata_hvg, edges=True, color = ANNOTATION_KEY, legend_loc='on data', legend_fontsize= 'xx-small')
 # saveas("PAGA_annot_sc_UMAP.png")
 
@@ -171,7 +180,9 @@ adata_hvg = run_PAGA(adata_hvg)
 # sc.pl.umap(adata_hvg, color='dpt_pseudotime', title="DPT Pseudotime of HVG genes")
 # saveas("dpt_pseudotime_hvg_UMAP.png")
 
-# for _, (descr, path) in enumerate(PATHS):
+# for descr, path in PATHS.items():
+#     if descr == "Other":
+#         continue
 #     sc.pl.draw_graph(adata_hvg, color=ANNOTATION_KEY, legend_loc='on data', 
 #                      legend_fontsize = 'xx-small', groups=path, title=f'{descr}')
 #     saveas(f"PAGA_{descr}_FA.png")
@@ -182,7 +193,9 @@ adata_hvg = run_PAGA(adata_hvg)
 # sc.pp.normalize_total(adata, target_sum=1e4)
 # sc.pp.log1p(adata)
 # fig, axs = plt.subplots(ncols=4, gridspec_kw={'wspace': 0.05, 'left': 0.12})
-# for ipath, (descr, path) in enumerate(PATHS):
+# for ipath, (descr, path) in enumerate(PATHS.items()):
+#     if descr == "Other":
+#         continue
 #     sc.pl.paga_path(adata=adata, nodes=path, keys=GENES,
 #                     show_node_names=False, ax=axs[ipath],
 #                     ytick_fontsize=12, left_margin=0.15, n_avg=50, 
@@ -199,16 +212,21 @@ adata_hvg = run_PAGA(adata_hvg)
 # logging.info("Algorithm PAGA complete!")
 
 # %%
-# # ========== CellRank: Combining MOSCOT with Pseudotime ==========
-# import pickle
-# import palantir
-# import scvelo as scv
-# import cellrank as cr
-# from cellrank.estimators import GPCCA
-# from cellrank.kernels import PseudotimeKernel
-# from cellrank.kernels import CytoTRACEKernel
-# from cellrank.kernels import RealTimeKernel
-# from cellrank.kernels import PrecomputedKernel
+# output_dir = "./salamander_palantir_test"
+# os.makedirs(output_dir, exist_ok=True)
+
+# %%
+# ========== CellRank: Combining MOSCOT with Pseudotime ==========
+import pickle
+import palantir
+import scvelo as scv
+import seaborn as sns
+import cellrank as cr
+from cellrank.estimators import GPCCA
+from cellrank.kernels import PseudotimeKernel
+from cellrank.kernels import CytoTRACEKernel
+from cellrank.kernels import RealTimeKernel
+from cellrank.kernels import PrecomputedKernel
 
 # %%
 # # ========== MOSCOT ==========
@@ -220,18 +238,20 @@ adata_hvg = run_PAGA(adata_hvg)
 # sc.pp.neighbors(adata, use_rep='X_pca')
 
 # logging.info("Computing RealTimeKernel...")
-# if dataset == 'chicken':
-#     adata.obs[TIME_KEY] = adata.obs[TIME_KEY].str.replace('E', '', regex=False)
 # adata.obs[TIME_KEY] = adata.obs[TIME_KEY].astype(float).astype("category")
 # tp = TemporalProblem(adata)
 # tp = tp.score_genes_for_marginals(gene_set_proliferation="human", gene_set_apoptosis="human")
 # sc.pl.umap(adata, color=["proliferation", "apoptosis"])
 # saveas("CellRank_birth_death_UMAP.png")
 # tp = tp.prepare(time_key=TIME_KEY)
-# tp = tp.solve(epsilon=1e-3, tau_a=0.95, scale_cost="mean", device="cpu")
+# if dataset == 'salamander':
+#     epsilon = 1e-3
+# elif dataset == 'chicken':
+#     epsilon = 5e-3
+# tp = tp.solve(epsilon=epsilon, tau_a=0.95, scale_cost="mean", device="cpu")
 # tmk = RealTimeKernel.from_moscot(tp)
-# tmk.compute_transition_matrix(self_transitions="all", conn_weight=0.3, threshold="auto")
-# tmk.plot_random_walks(max_iter=500, start_ixs={TIME_KEY: 30.0}, basis="umap", seed=0)
+# tmk.compute_transition_matrix(self_transitions="all", conn_weight=0.5, threshold="auto")
+# tmk.plot_random_walks(max_iter=500, start_ixs={TIME_KEY: START_TIME}, basis="umap", seed=0)
 # saveas("CellRank_random_walks_stage_UMAP.png")
 
 # tmk.write_to_adata(key="moscot_T", copy=False)
@@ -246,11 +266,11 @@ adata_hvg = run_PAGA(adata_hvg)
 # dm_res = palantir.utils.run_diffusion_maps(adata, n_components=20)
 # ms_data = palantir.utils.determine_multiscale_space(adata)
 # palantir.plot.plot_diffusion_components(adata)
-# saveas("palantir_diffusion_components.png")
-# imputed_X = palantir.utils.run_magic_imputation(adata)
+# saveas("palantir_diffusion_components.png", output_dir)
+# imputed_X = palantir.utils.run_magic_imputation(adata, n_jobs=10)
 # pr_res = palantir.core.run_palantir(adata, root_cell, num_waypoints=3000, n_jobs=10)
 # palantir.plot.plot_palantir_results(adata)
-# saveas("palantir_pseudotime_UMAP.png")
+# saveas("palantir_pseudotime_UMAP.png", output_dir)
 # pk = PseudotimeKernel(adata, time_key="palantir_pseudotime")
 # pk.compute_transition_matrix(threshold_scheme="soft")
 # pk.write_to_adata(key="palantir_T", copy=False)
@@ -265,65 +285,83 @@ adata_hvg = run_PAGA(adata_hvg)
 # ctk = CytoTRACEKernel(adata).compute_cytotrace()
 # sc.pl.umap(adata, color="ct_score", color_map="gnuplot2")
 # saveas("CytoTRACE_score_UMAP.png")
+# sc.pl.umap(adata, color=["ct_pseudotime", "nFeature_RNA"], color_map="gnuplot2")
+# saveas("CytoTRACE_pseudotime_UMAP.png")
 # adata.write(os.path.join(data_dir, f"{FILE_NAME}_CellRank.h5ad"), compression='gzip')
 
 # %%
 # # ========== Combine kernels ==========
-# adata = sc.read(os.path.join(data_dir, f"{FILE_NAME}_CellRank.h5ad"))
+adata = sc.read(os.path.join(data_dir, f"{FILE_NAME}_CellRank.h5ad"))
 # pk = PseudotimeKernel.from_adata(adata, key="palantir_T")
-# tmk = RealTimeKernel.from_adata(adata, key="moscot_T")
+tmk = RealTimeKernel.from_adata(adata, key="moscot_T")
 # combined_kernel = 0.5 * tmk + 0.5 * pk
 # combined_kernel.write_to_adata(key="combined_kernel_T", copy=False)
 # adata.write(os.path.join(data_dir, f"{FILE_NAME}_CellRank.h5ad"), compression='gzip')
 
 # %%
 # # ========== Computing initial and terminal states ==========
-# logging.info("Computing macrostates...")
-# g = cr.estimators.GPCCA(combined_kernel) # Use the Generalized Perron Cluster Cluster Analysis estimator
+# adata = sc.read(os.path.join(data_dir, f"{FILE_NAME}_CellRank.h5ad"))
+g = GPCCA.read(os.path.join(data_dir, f"{FILE_NAME}_gpcca_model.pkl"))
+
+logging.info("Computing macrostates...")
+if dataset == 'salamander':
+    g = cr.estimators.GPCCA(combined_kernel)
+elif dataset == 'chicken':
+    g = cr.estimators.GPCCA(tmk)
 # g.compute_schur(n_components=50, method='krylov', verbose=True)
 # g.plot_spectrum(real_only=True, 
 #                 save=os.path.join(output_dir, "CellRank_real_eigenvals.png"), dpi=300)
-# g.fit(cluster_key=ANNOTATION_KEY, n_states=41)
-# g.plot_macrostates(which="all", legend_loc="on data", size=100, 
+# g.fit(cluster_key=ANNOTATION_KEY, n_states=40)
+# g.plot_macrostates(which="all", legend_loc="on data", size=80, legend_fontsize=4,
 #                    save=os.path.join(output_dir, "CellRank_all_states_1.png"), dpi=300)
-# g.plot_macrostates(which="all", legend_loc="right", size=100, 
+# g.plot_macrostates(which="all", legend_loc="right", size=80, legend_fontsize=4,
 #                    save=os.path.join(output_dir, "CellRank_all_states_2.png"), dpi=300)
-# g.plot_macrostate_composition(key=ANNOTATION_KEY, figsize=(10, 4), 
-#                               save=os.path.join(output_dir, "CellRank_macrostate_composition.png"), 
-#                               dpi=300)
-# g.plot_coarse_T(annotate=False, 
-#                 save=os.path.join(output_dir, "CellRank_coarse_transitions.png"), dpi=300)
+# g.plot_macrostate_composition(key=ANNOTATION_KEY, figsize=(10, 4), dpi=300,
+#                               save=os.path.join(output_dir, "CellRank_macrostate_composition.png"))
+# g.plot_coarse_T(annotate=False)
+# saveas("CellRank_coarse_transitions.png", output_dir)
 
 # logging.info("Computing fate probabilities and driver genes...")
-# g.set_terminal_states(states=["PALL1_1", "PALL1_2", "PALL2", "STR_MSN1", "STR_MSN1_2", 
-#                               "STR_MSN1_SOX8", "STR_MSN1_FOXP2", "STR_MSN2", "STR_MSN2_PENK",
-#                               "IN_MGE_P_LAMP5", "IN_MGE_SP_SST+", "IN_MGE_P_SST+_1", "IN_MGE_P_SST+_2", 
-#                               "IN_MGE_P_SST-", "IN_CGE_1", "IN_CGE_2", "SEP_LAT_PAX6_1", "SEP_MED1_1",
-#                               "SEP_MED1_2", "SEP_LAT2", "SEP_LAT1-3", "SEP_LAT_PAX6_2", "SEP_LAT4",
-#                               "OB_PGC_TH", "OB_PGC_FOXP2_1", "OB_PGC_FOXP2_2", "OB_GC8", "OB_GC13",
-#                               "OB_GC2-10-11-12_1", "OB_GC3-7", "OB_GC1-6", "AMY_CEA_LA"])
-# g.set_initial_states(states=["CGE", "LGE"])
-# g.plot_macrostates(which="terminal", legend_loc="right", s=100, 
-#                    save=os.path.join(output_dir, "CellRank_terminal_states.png"), dpi=300)
-# g.plot_macrostates(which="initial", legend_loc="on data", s=100, 
-#                    save=os.path.join(output_dir, "CellRank_initial_states.png"), dpi=300)
-# g.compute_fate_probabilities()
-# g.plot_fate_probabilities(save=os.path.join(output_dir, "CellRank_fate_probabilities.png"), dpi=300)
+# states_to_exclude = ['imm', 'prec', 'CGE', 'MGE', 'LGE', 'PROG', 'PREC']
+# terminal_states = [x for x in adata.obs['macrostates_fwd'].unique().dropna().to_list() 
+#                    if not any(x.startswith(prefix) for prefix in states_to_exclude)]
+# g.set_terminal_states(states=terminal_states)
+# g.plot_macrostates(which="terminal", s=80, legend_loc="on data", legend_fontoutline=2, 
+#                    figsize=(8,6), legend_fontsize=4, legend_fontweight="normal")
+# saveas("CellRank_terminal_states.png", output_dir)
+g.set_initial_states(states=["CGE", "LGE"])
+g.plot_macrostates(which="initial", legend_loc="on data", s=80)
+saveas("CellRank_initial_states.png", output_dir)
+g.compute_fate_probabilities()
+g.plot_fate_probabilities(legend_loc="on data", legend_fontoutline=2, figsize=(8,6),
+                          legend_fontsize=4, legend_fontweight="normal")
+saveas("CellRank_fate_probabilities.png", output_dir)
 
-# g.write(os.path.join(data_dir, "gpcca_model.pkl"))
-# adata.write(os.path.join(data_dir, f"{FILE_NAME}_CellRank.h5ad"), compression='gzip')
+g.write(os.path.join(data_dir, f"{FILE_NAME}_gpcca_model.pkl"))
+adata.write(os.path.join(data_dir, f"{FILE_NAME}_CellRank.h5ad"), compression='gzip')
+
+# %%
+# g.write(os.path.join(output_dir, f"{FILE_NAME}_gpcca_model.pkl"))
+# adata.write(os.path.join(output_dir, f"{FILE_NAME}_CellRank.h5ad"), compression='gzip')
 
 # %%
 # # ========== Visualizing and clustering gene expression trends ==========
-# adata = sc.read(os.path.join(data_dir, f"{FILE_NAME}_CellRank.h5ad"))
-# g = GPCCA.read(os.path.join(data_dir, "gpcca_model.pkl"))
+# def find_cluster_list(terminal_state, PATHS):
+#     if terminal_state.startswith("AMY"):
+#         return None
+#     for _, cell_types in PATHS.items():
+#         for ct in cell_types:
+#             if terminal_state.startswith(ct):
+#                 return cell_types
+#     return None
 
 # model = cr.models.GAM(adata)
 # gene_sets = {}
 # for terminal_state in g.terminal_states.unique().dropna():
-#     lineage_drivers = g.compute_lineage_drivers(lineages=terminal_state)
+#     clusters = find_cluster_list(terminal_state, PATHS)
+#     lineage_drivers = g.compute_lineage_drivers(lineages=terminal_state, n_jobs=16, 
+#                                                 cluster_key=ANNOTATION_KEY, clusters=clusters)
 #     driver_genes = lineage_drivers.head(30).index.to_list()
-#     print("driver_genes for {}: {}".format(terminal_state, driver_genes))
 #     gene_sets[terminal_state] = driver_genes
 #     cr.pl.heatmap(
 #         adata,
@@ -338,31 +376,62 @@ adata_hvg = run_PAGA(adata_hvg)
 #         show_all_genes=True,
 #         weight_threshold=(1e-3, 1e-3),
 #     )
-#     saveas(f"CellRank_{terminal_state}_gene_trend.png")
+#     saveas(f"CellRank_{terminal_state}_gene_trend.png", output_dir)
 # pd.DataFrame(gene_sets).to_excel(os.path.join(output_dir, "CellRank_fates_top30_dexp.xlsx"), index=False)
 
 # %%
-# # ========== Mapping progenitor and precursor states to terminal states ==========
+# ========== Mapping progenitor and precursor states to terminal states ==========
 # adata = sc.read(os.path.join(data_dir, f"{FILE_NAME}_CellRank.h5ad"))
 # terminal_states = adata.obs['term_states_fwd'].unique().dropna().to_list()
 # prec_clusters = [x for x in adata.obs[ANNOTATION_KEY].unique() if "prec" in str(x).lower()]
-# sc.pl.umap(adata, color=ANNOTATION_KEY, groups=prec_clusters, legend_loc="on data", 
+# sc.pl.umap(adata, color=ANNOTATION_KEY, groups=prec_clusters, legend_loc="right", 
 #            legend_fontsize = 'x-small', frameon=True, size=10)
-# saveas("CellRank_prec_clusters_UMAP.png")
-# cr.pl.aggregate_fate_probabilities(adata, mode="bar", lineages=terminal_states, 
-#                                    cluster_key=ANNOTATION_KEY, clusters=prec_clusters, ncols = 2)
-# saveas("CellRank_prec_fate_probs.png")
+# saveas("CellRank_prec_clusters_UMAP.png", output_dir)
+# cr.pl.aggregate_fate_probabilities(adata, mode="bar", lineages=terminal_states,
+#                                    cluster_key=ANNOTATION_KEY, clusters=prec_clusters, ncols=1)
+# fig = plt.gcf()
+# for ax in fig.axes:
+#     ax.tick_params(axis='x', labelsize=6)
+#     ax.tick_params(axis='y', labelsize=6)
+# saveas("CellRank_prec_fate_probs.png", output_dir)
 
-# # prog_clusters = adata[adata.obs['origin']=='progenitors'].obs['SCT_snn_res.2'].value_counts() > 30
-# # prog_clusters = prog_clusters[prog_clusters].index.to_list()
+# prog_clusters = adata[adata.obs['origin']=='progenitors'].obs['SCT_snn_res.2'].value_counts() > 30
+# prog_clusters = prog_clusters[prog_clusters].index.to_list()
 # prog_clusters = adata.obs['originalclusters_prog'].unique().tolist()
 # prog_clusters.remove("NaN")
-# sc.pl.umap(adata, color='originalclusters_prog', groups=prog_clusters, legend_fontsize = 'xx-small', frameon=True, size=10)
-# saveas("CellRank_prog_clusters_UMAP.png")
-# cr.pl.aggregate_fate_probabilities(adata, mode="bar", lineages=terminal_states, 
-#                                    cluster_key='originalclusters_prog', clusters=prog_clusters, ncols = 2)
-# saveas("CellRank_prog_fate_probs.png")
+# sc.pl.umap(adata, color='originalclusters_prog', groups=prog_clusters, legend_fontsize='xx-small', frameon=True, size=10)
+# saveas("CellRank_prog_clusters_UMAP.png", output_dir)
+# cr.pl.aggregate_fate_probabilities(adata, mode="bar", lineages=terminal_states, ncols=1, 
+#                                    cluster_key='originalclusters_prog', clusters=prog_clusters)
+# fig = plt.gcf()
+# for ax in fig.axes:
+#     ax.tick_params(axis='x', labelsize=6)
+#     ax.tick_params(axis='y', labelsize=6)
+# saveas("CellRank_prog_fate_probs.png", output_dir)
 
+# %%
+# # ========== Generating a crosstable on two annotation columns ==========
+# import scipy
+# from scipy.optimize import linear_sum_assignment
+
+# ct = pd.crosstab(adata.obs['macrostates_fwd'], adata.obs[ANNOTATION_KEY])
+# pct = ct.div(ct.sum(axis=1), axis=0) * 100
+
+# cost_matrix = -pct.values
+# row_ind, col_ind = linear_sum_assignment(cost_matrix)
+# pct_reordered = pct.iloc[row_ind, col_ind]
+# pct_reordered.index = pct.index[row_ind]
+# pct_reordered.columns = pct.columns[col_ind]
+
+# plt.figure(figsize=(10, 8))
+# sns.heatmap(pct_reordered, cmap="viridis")
+# plt.xticks(fontsize=6)
+# plt.yticks(fontsize=6)
+# plt.xlabel(ANNOTATION_KEY)
+# plt.ylabel('macrostates_fwd')
+# plt.tight_layout()
+# saveas("Cellrank_crosstable.png")
+ 
 # %%
 # # ========== scFates ==========
 # os.environ['R_HOME'] = sys.exec_prefix+"/lib/R/"
@@ -381,21 +450,25 @@ adata_hvg = run_PAGA(adata_hvg)
 # saveas("scFates_Cellrank_annot_sc_FA.png")
 # scf.tl.cellrank_to_tree(adata, method="ppt", Nodes=400, time="palantir_pseudotime",
 #                         device="gpu", seed=1, ppt_lambda=1, ppt_sigma=0.01, ppt_nsteps=200)
-# scf.pl.graph(adata)
+# sc.set_figure_params(figsize=(10,10))
+# scf.pl.graph(adata, alpha_nodes=0.6, size_nodes=4, linewidth=1)
 # saveas("scFates_Cellrank_tree_rep_UMAP.png")
 
 # scf.tl.root(adata, 321)
 # scf.tl.pseudotime(adata, n_jobs=16, n_map=200, seed=42)
-# scf.pl.trajectory(adata, color_cells=ANNOTATION_KEY)
+# scf.pl.trajectory(adata, scale_path=0.6)
 # saveas("scFates_Cellrank_trajectory_UMAP.png")
 # sc.pl.umap(adata, color=[ANNOTATION_KEY, "seg"])
 # saveas("scFates_Cellrank_annot_seg_UMAP.png")
 
 # scf.tl.dendrogram(adata)
 # sc.set_figure_params(figsize=(10,6))
+# scf.pl.dendrogram(adata, color=ANNOTATION_KEY, legend_loc='on data', color_milestones=False, 
+#                   legend_fontsize=4, legend_fontweight='normal')
+# saveas("scFates_Cellrank_annot_dendrogram.svg", format='svg')
 # scf.pl.dendrogram(adata, color='macrostates_fwd', legend_loc='on data', color_milestones=False, 
 #                   legend_fontsize=4, legend_fontweight='normal')
-# saveas("scFates_Cellrank_annot_dendrogram.png")
+# saveas("scFates_Cellrank_macrostates_dendrogram.svg", format='svg')
 # scf.pl.dendrogram(adata, color="milestones", legend_loc="on data", color_milestones=False, 
 #                   legend_fontsize=4, legend_fontweight='normal')
 # saveas("scFates_Cellrank_milestones_dendrogram.png")
